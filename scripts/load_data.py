@@ -32,8 +32,10 @@ def main() -> None:
             (epoch_ms(tpep_dropoff_datetime) - epoch_ms(tpep_pickup_datetime))
                 AS duration_ms
         FROM read_parquet('{parquet_glob}')
-        WHERE fare_amount > 0
-          AND trip_distance > 0
+        WHERE fare_amount BETWEEN 2.5 AND 500    -- min NYC fare to a sane cap; drops $0 and data-entry errors
+          AND trip_distance BETWEEN 0.5 AND 100  -- 0.5mi floor kills the $/mile outliers; 100mi caps junk
+          AND PULocationID NOT IN (264, 265)     -- 264/265 = Unknown / N/A zones; exclude from all analytics
+          AND DOLocationID NOT IN (264, 265)
           AND tpep_pickup_datetime >= '2023-01-01'
           AND tpep_pickup_datetime <  '2023-07-01'
           AND tpep_dropoff_datetime > tpep_pickup_datetime

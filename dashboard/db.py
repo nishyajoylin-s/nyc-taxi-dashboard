@@ -167,7 +167,7 @@ def query_borough_breakdown(con: duckdb.DuckDBPyConnection,
                 COALESCE(z.borough, 'Unknown')      AS borough,
                 COUNT(*)                             AS trips,
                 ROUND(SUM(t.fare_amount), 2)         AS revenue,
-                ROUND(AVG(t.fare_amount / NULLIF(t.trip_distance, 0)), 2) AS avg_fare_per_mile
+                ROUND(SUM(t.fare_amount) / NULLIF(SUM(t.trip_distance), 0), 2) AS avg_fare_per_mile
             FROM trips t
             LEFT JOIN zones z ON z.zone_id = t.pickup_zone
             GROUP BY z.borough

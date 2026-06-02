@@ -97,8 +97,10 @@ def _build_db(progress_text) -> None:
             CAST(trip_distance  AS DOUBLE) AS trip_distance,
             (epoch_ms(tpep_dropoff_datetime) - epoch_ms(tpep_pickup_datetime)) AS duration_ms
         FROM read_parquet('{parquet_glob}')
-        WHERE fare_amount > 0
-          AND trip_distance > 0
+        WHERE fare_amount BETWEEN 2.5 AND 500    -- min NYC fare to a sane cap; drops $0 and data-entry errors
+          AND trip_distance BETWEEN 0.5 AND 100  -- 0.5mi floor kills the $/mile outliers; 100mi caps junk
+          AND PULocationID NOT IN (264, 265)     -- 264/265 = Unknown / N/A zones; exclude from all analytics
+          AND DOLocationID NOT IN (264, 265)
           AND tpep_pickup_datetime >= '2023-01-01'
           AND tpep_pickup_datetime <  '2023-04-01'
           AND tpep_dropoff_datetime > tpep_pickup_datetime
@@ -309,22 +311,23 @@ with tab2:
         display_df = borough_df if h_borough == "All" else borough_df[borough_df["borough"] == h_borough]
         col_a, col_b = st.columns(2)
         with col_a:
+            st.markdown("**Total Trips by Borough**")
             fig_b1 = go.Figure(go.Bar(x=display_df["borough"], y=display_df["trips"],
                 marker_color="#f5c518"))
-            fig_b1.update_layout(**dark_layout(height=280), yaxis_title="total trips",
-                                 title="Total Trips by Borough")
+            fig_b1.update_layout(**dark_layout(height=280), yaxis_title="total trips")
             st.plotly_chart(fig_b1, use_container_width=True)
         with col_b:
+            st.markdown("**Revenue & Fare Efficiency**")
             fig_b2 = go.Figure()
             fig_b2.add_trace(go.Bar(x=display_df["borough"], y=display_df["revenue"],
                 marker_color="#2ecc71", name="Revenue ($)"))
             fig_b2.add_trace(go.Scatter(x=display_df["borough"], y=display_df["avg_fare_per_mile"],
                 mode="lines+markers", name="Avg $/mile",
                 line=dict(color="#e74c3c", width=2), yaxis="y2"))
-            fig_b2.update_layout(**dark_layout(height=280), title="Revenue & Fare Efficiency",
+            fig_b2.update_layout(**dark_layout(height=280),
                 yaxis=dict(title="revenue ($)"),
                 yaxis2=dict(title="avg $/mile", overlaying="y", side="right"),
-                legend=dict(orientation="h", y=1.1))
+                legend=dict(orientation="h", y=1.12, x=0))
             st.plotly_chart(fig_b2, use_container_width=True)
 
     st.divider()
@@ -375,6 +378,7 @@ with tab2:
             marker=dict(size=10, color=opp_df["imbalance"], colorscale="RdYlGn",
                         showscale=True, colorbar=dict(title="Imbalance<br>(drop−pick)", thickness=12)),
             hovertemplate="<b>%{text}</b><br>Pickups: %{x:,}<br>Dropoffs: %{y:,}<extra></extra>",
+            showlegend=False,
         ))
         fig_o.add_trace(go.Scatter(x=[0, max_val], y=[0, max_val], mode="lines",
             line=dict(color="#555", dash="dash", width=1), showlegend=False))
