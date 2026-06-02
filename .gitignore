@@ -1,0 +1,25 @@
+# Data files (downloaded separately, ~300 MB)
+data/*.parquet
+data/*.csv
+
+# DuckDB database
+db/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Logs
+logs/*.log
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
